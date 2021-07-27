@@ -11,7 +11,6 @@ SVF_FREQ := 12.0
 IMAGE_NAME := quartus
 QUARTUS_VER := 20.1.1.720
 # QUARTUS_VER := 20.1.0.711
-# QUARTUS_VER := 19.1.0.670
 SIMULATION_PATH := simulation/modelsim
 OUTPUT_PATH := output_files
 
@@ -33,6 +32,7 @@ ifeq ($(shell uname -m), arm64)
 PLATFORM := amd64
 ifeq ($(JAVA_SMALLER_HEAP),y)
 # to avoid tcl init.tcl error
+# TODO: no need?
 # -XX:-UseSerialGC -XX:+UseConcMarkSweepGC 
 # OPT_ADDITIONAL := --memory 6500M --memory-swap -1 -e _JAVA_OPTIONS="-Xint -XX:-TieredCompilation -XX:-Inline -XX:+CMSIncrementalMode -XX:-UseSerialGC -XX:+UseConcMarkSweepGC -verbose:gc -Xms1500M -Xmx1500M"
 OPT_ADDITIONAL := --memory 3500M --memory-swap -1 -e _JAVA_OPTIONS="-Xint -verbose:gc -Xms1500M -Xmx1500M"
@@ -103,6 +103,9 @@ quartus:
 compile:
 	make run ARGS="/opt/quartus/quartus/bin/quartus_sh --flow compile $(PROJECT_NAME)" ALTMALLOC=y
 
+distclean:
+	rm -rf db incremental_db sys simulation $(OUTPUT_PATH)
+
 clean:
 	make run ARGS="/opt/quartus/quartus/bin/quartus_sh --clean $(PROJECT_NAME)"
 
@@ -118,7 +121,7 @@ update_mif:
 assemble: update_mif
 	make run ARGS="/opt/quartus/quartus/bin/quartus_asm --read_settings_files=on --write_settings_files=off $(PROJECT_NAME) -c $(PROJECT_NAME)"
 
-convert_prog_file:
+convert_prog_file: assemble
 	make run ARGS="/opt/quartus/quartus/bin/quartus_cpf -c $(PROJECT_NAME).cof"
 
 gen_modelsim_script:
@@ -133,7 +136,7 @@ conv_sof_svf: assemble
 urjtag_detect:
 	echo "cable usbblaster\ndetect" | jtag
 
-urjtag_prog_sof: assemble
+urjtag_prog_sram: conv_sof_svf
 	cd $(OUTPUT_PATH) && \
 	echo "cable usbblaster\ndetect\npart 0\nsvf \"$(PROJECT_NAME).sof.svf\"" | jtag
 
