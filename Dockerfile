@@ -6,12 +6,6 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
     dpkg --add-architecture i386 && \
     apt-get -q update && \
     apt-get install --no-install-recommends -qq -y \
-        # TODO: no need?
-        software-properties-common \
-        build-essential \
-        g++-multilib \
-        gcc-multilib \
-        #
         ca-certificates \
         nano locales curl xterm psmisc \
         libfontconfig1:amd64 \
@@ -56,7 +50,7 @@ RUN cd /root && git clone https://github.com/emeryberger/Hoard && \
 
 FROM base as install
 
-ARG QUARTUS_VER="20.1.0.711"
+ARG QUARTUS_VER="20.1.1.720"
 
 ADD Quartus-lite-${QUARTUS_VER}-linux.tar /quartus
 RUN mkdir -p /opt/quartus && \
@@ -69,7 +63,7 @@ RUN mkdir -p /opt/quartus && \
     /quartus/components/ModelSimSetup-${QUARTUS_VER}-linux.run --modelsim_edition modelsim_ase --mode unattended --accept_eula 1 --installdir /opt/quartus
 
 # disable CPU feature check
-RUN sed -i -e '/grep\ sse/{n;s/test\ \$?\ !=\ 0\ /false/}' /opt/quartus/quartus/adm/qenv.sh
+#RUN sed -i -e '/grep\ sse/{n;s/test\ \$?\ !=\ 0\ /false/}' /opt/quartus/quartus/adm/qenv.sh
 
 
 # build runtime image
