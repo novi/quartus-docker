@@ -20,6 +20,7 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
         libncurses5:i386 \
         libxext6:i386 \
         libxft2:i386 \
+		libstdc++6:i386 \
         && \
         apt-get install --no-install-recommends -qq -y \
         # for qsys
