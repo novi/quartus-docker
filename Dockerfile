@@ -7,14 +7,14 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
         ca-certificates \
         nano locales curl xterm psmisc xterm \
         libglib2.0-0:amd64 \
-		libxkbcommon-x11-0 \
-		libx11-xcb1 \
-		libdbus-1-3 \
+        libxkbcommon-x11-0 \
+        libx11-xcb1 \
+        libdbus-1-3 \
         libtcmalloc-minimal4 \
         libjemalloc2 \
         # for qsys
         libxtst6:amd64 \
-		libxi6:amd64 \
+        libxi6:amd64 \
         && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/* && \
