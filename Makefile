@@ -1,7 +1,9 @@
-.PHONY: all build x11 x11_close run shell nios2_shell quartus_altmalloc quartus compile clean
+.PHONY: all build x11 x11_close run shell nios2_shell quartus_altmalloc quartus compile clean simulation
 
 
 # set your project name
+MAC_ADDRESS := 00:0C:29:XX:XX:XX
+LICENSE_FILE := LR-09999_License.dat
 PROJECT_NAME := aaa
 QSYS_FILE := sys.qsys
 SVF_VOLTAGE := 3.3
@@ -9,7 +11,7 @@ SVF_VOLTAGE := 3.3
 SVF_FREQ := 12.0
 
 IMAGE_NAME := quartus
-QUARTUS_VER := 20.1.1.720
+QUARTUS_VER := 21.1.1.850
 # QUARTUS_VER := 20.1.0.711
 SIMULATION_PATH := simulation/modelsim
 OUTPUT_PATH := output_files
@@ -27,6 +29,7 @@ ALTMALLOC := n
 IMAGE_TAG := $(IMAGE_NAME):$(QUARTUS_VER)
 # IMAGE_TAG := b032baf709c4
 
+
 ifeq ($(shell uname -m), arm64)
 # PLATFORM := arm64
 PLATFORM := amd64
@@ -39,7 +42,7 @@ OPT_ADDITIONAL := --memory 3500M --memory-swap -1 -e _JAVA_OPTIONS="-Xint -verbo
 else
 # -XX:-TieredCompilation -XX:-Inline -XX:-UseSerialGC -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC
 # disable JIT to prevent getting stuck the container on ARM Mac
-OPT_ADDITIONAL := --memory 3500M --memory-swap -1 -e _JAVA_OPTIONS="-Xint -verbose:gc -Xms3000M -Xmx3000M -XX:MaxMetaspaceSize=2000M"
+OPT_ADDITIONAL := -e _JAVA_OPTIONS="-Xint -verbose:gc -Xms3000M -Xmx3000M -XX:MaxMetaspaceSize=2000M"
 endif
 else
 PLATFORM := amd64
@@ -52,7 +55,7 @@ ifeq ($(ALTMALLOC),y)
 	# CONTAINER_LD_PRELOAD := -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4
 	# endif
 	CONTAINER_LD_PRELOAD := -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4
-	# CONTAINER_LD_PRELOAD := -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.1
+	# CONTAINER_LD_PRELOAD := -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 	# no crash for compile 
 	# CONTAINER_LD_PRELOAD := -e LD_PRELOAD=/opt/lib/libhoard.so
 endif
@@ -61,7 +64,7 @@ all:
 
 
 build:
-	docker build --build-arg QUARTUS_VER=$(QUARTUS_VER) -t $(IMAGE_TAG) .
+	docker build --build-arg QUARTUS_VER=$(QUARTUS_VER) --pull -t $(IMAGE_TAG) .
 # ifeq ($(shell uname -m), arm64)
 # 	docker build -f Dockerfile.arm64 --build-arg QUARTUS_VER=$(QUARTUS_VER) -t $(IMAGE_TAG) .
 # else
@@ -79,14 +82,18 @@ x11_close:
 
 run:
 	docker run --name $(CONTAINER_NAME) --rm --privileged -it --platform linux/$(PLATFORM) \
+	--mac-address=$(MAC_ADDRESS) \
 	-v ~/.Xauthority:/root/.Xauthority \
 	-e DISPLAY=$(CONTAINER_DISPLAY) \
+	-e LM_LICENSE_FILE=/opt/quartus/$(LICENSE_FILE) \
 	-v $(LOCAL_SHARED_PATH)/.config:/root/.config \
 	-v $(LOCAL_SHARED_PATH)/.altera.quartus:/root/.altera.quartus \
+	-v $(LOCAL_SHARED_PATH)/$(LICENSE_FILE):/opt/quartus/$(LICENSE_FILE) \
 	-v $(LOCAL_PATH):$(CONTAINER_PROJ_PATH) \
 	-w $(CONTAINER_PROJ_PATH) \
 	$(CONTAINER_LD_PRELOAD) $(OPT_ADDITIONAL) \
 	$(IMAGE_TAG) $(ARGS)
+
 
 shell:
 	make run ARGS=""
@@ -95,13 +102,13 @@ nios2_shell:
 	make run ARGS="/opt/quartus/nios2eds/nios2_command_shell.sh"
 
 quartus_altmalloc:
-	make quartus ALTMALLOC=y #CONTAINER_LD_PRELOAD=-e\ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4
+	make quartus ALTMALLOC=y
 
 quartus:
 	make run ARGS="/opt/quartus/quartus/bin/quartus --64bit"
 
 compile:
-	make run ARGS="/opt/quartus/quartus/bin/quartus_sh --flow compile $(PROJECT_NAME)" ALTMALLOC=y
+	make run ARGS="/opt/quartus/quartus/bin/quartus_sh --flow compile $(PROJECT_NAME)"
 
 distclean:
 	rm -rf db incremental_db sys simulation $(OUTPUT_PATH)
@@ -110,7 +117,7 @@ clean:
 	make run ARGS="/opt/quartus/quartus/bin/quartus_sh --clean $(PROJECT_NAME)"
 
 qsys_edit:
-	make run ARGS="/opt/quartus/quartus/sopc_builder/bin/qsys-edit" JAVA_SMALLER_HEAP=y
+	make run ARGS="/opt/quartus/quartus/sopc_builder/bin/qsys-edit"
 
 qsys_gen:
 	make run ARGS="/opt/quartus/quartus/sopc_builder/bin/qsys-generate $(QSYS_FILE) --synthesis=VHDL"
@@ -124,11 +131,11 @@ assemble: update_mif
 convert_prog_file: assemble
 	make run ARGS="/opt/quartus/quartus/bin/quartus_cpf -c $(PROJECT_NAME).cof"
 
-gen_modelsim_script:
+gen_sim_script:
 	make run ARGS="/opt/quartus/quartus/bin/quartus_sh -t /opt/quartus/quartus/common/tcl/internal/nativelink/qnativesim.tcl --rtl_sim $(PROJECT_NAME) $(PROJECT_NAME)"
 
-modelsim:
-	make run OPT_ADDITIONAL=-w\ $(CONTAINER_PROJ_PATH)/$(SIMULATION_PATH) ARGS="/opt/quartus/modelsim_ase/linuxaloem/vsim"
+simulation:
+	make run OPT_ADDITIONAL=-w\ $(CONTAINER_PROJ_PATH)/$(SIMULATION_PATH) ARGS="/opt/quartus/questa_fse/bin/vsim"
 
 conv_sof_svf: assemble
 	make run ARGS="/opt/quartus/quartus/bin/quartus_cpf -c -g $(SVF_VOLTAGE) -q $(SVF_FREQ)MHz -n p $(OUTPUT_PATH)/$(PROJECT_NAME).sof $(OUTPUT_PATH)/$(PROJECT_NAME).sof.svf"
