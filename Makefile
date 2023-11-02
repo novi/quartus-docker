@@ -42,7 +42,7 @@ OPT_ADDITIONAL := --memory 3500M --memory-swap -1 -e _JAVA_OPTIONS="-Xint -verbo
 else
 # -XX:-TieredCompilation -XX:-Inline -XX:-UseSerialGC -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC
 # disable JIT to prevent getting stuck the container on ARM Mac
-OPT_ADDITIONAL := --memory 3500M --memory-swap -1 -e _JAVA_OPTIONS="-Xint -verbose:gc -Xms3000M -Xmx3000M -XX:MaxMetaspaceSize=2000M"
+OPT_ADDITIONAL := -e _JAVA_OPTIONS="-Xint -verbose:gc -Xms3000M -Xmx3000M -XX:MaxMetaspaceSize=2000M"
 endif
 else
 PLATFORM := amd64
@@ -64,7 +64,7 @@ all:
 
 
 build:
-	docker build --build-arg QUARTUS_VER=$(QUARTUS_VER) -t $(IMAGE_TAG) .
+	docker build --build-arg QUARTUS_VER=$(QUARTUS_VER) --pull -t $(IMAGE_TAG) .
 # ifeq ($(shell uname -m), arm64)
 # 	docker build -f Dockerfile.arm64 --build-arg QUARTUS_VER=$(QUARTUS_VER) -t $(IMAGE_TAG) .
 # else
