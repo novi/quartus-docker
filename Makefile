@@ -11,8 +11,7 @@ SVF_VOLTAGE := 3.3
 SVF_FREQ := 12.0
 
 IMAGE_NAME := quartus
-QUARTUS_VER := 21.1.1.850
-# QUARTUS_VER := 20.1.0.711
+QUARTUS_VER := 22.1std.2.922
 SIMULATION_PATH := simulation/modelsim
 OUTPUT_PATH := output_files
 
@@ -27,7 +26,6 @@ CONTAINER_NAME := $(IMAGE_NAME)_run_$(PROJECT_NAME)
 ALTMALLOC := n
 
 IMAGE_TAG := $(IMAGE_NAME):$(QUARTUS_VER)
-# IMAGE_TAG := b032baf709c4
 
 
 ifeq ($(shell uname -m), arm64)
@@ -65,11 +63,6 @@ all:
 
 build:
 	docker build --build-arg QUARTUS_VER=$(QUARTUS_VER) --pull -t $(IMAGE_TAG) .
-# ifeq ($(shell uname -m), arm64)
-# 	docker build -f Dockerfile.arm64 --build-arg QUARTUS_VER=$(QUARTUS_VER) -t $(IMAGE_TAG) .
-# else
-# 	docker build --build-arg QUARTUS_VER=$(QUARTUS_VER) -t $(IMAGE_TAG) .
-# endif
 
 x11: x11_close
 	socat TCP-LISTEN:6000,reuseaddr,fork UNIX-CLIENT:\"${DISPLAY}\" &

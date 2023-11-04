@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 ubuntu:20.04 as base
+FROM --platform=linux/amd64 ubuntu:22.04 as base
 
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
     set -eux && \
@@ -40,11 +40,11 @@ RUN cd /root && git clone https://github.com/emeryberger/Hoard && \
 
 FROM base as install
 
-ARG QUARTUS_VER="21.1.1.850"
+ARG QUARTUS_VER="22.1std.2.922"
 
 ADD Quartus-lite-${QUARTUS_VER}-linux.tar /quartus
 RUN mkdir -p /opt/quartus && \
-    /quartus/setup.sh --mode unattended --disable-components modelsim_ae --accept_eula 1 --installdir /opt/quartus
+    /quartus/setup.sh --mode unattended --disable-components questa_fe --accept_eula 1 --installdir /opt/quartus
 
 
 # disable CPU feature check
